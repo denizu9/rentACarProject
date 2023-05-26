@@ -1,15 +1,51 @@
 package com.example.demo;
 
+import com.example.demo.core.utilities.exceptions.BusinessException;
+import com.example.demo.core.utilities.exceptions.ProblemDetails;
+import com.example.demo.core.utilities.exceptions.ValidationProblemDetails;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.ValidationException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.HashMap;
 
 @SpringBootApplication
+@RestControllerAdvice // Bütün controller'lar exceptionhandler'a tabi demektir.
 public class RentACarNewApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(RentACarNewApplication.class, args);
+	}
+
+	// aop techniques
+	@ExceptionHandler // Bir hata oluşursa buradan geçecek
+	@ResponseStatus(code = HttpStatus.BAD_REQUEST)
+	public ProblemDetails handleBusinessException(BusinessException businessException){ // Hangi hata olursa handle edeyim?
+		ProblemDetails problemDetails = new ProblemDetails();
+		problemDetails.setMessage(businessException.getMessage());
+		return problemDetails;
+	}
+
+	@ExceptionHandler // Bir hata oluşursa buradan geçecek
+	@ResponseStatus(code = HttpStatus.BAD_REQUEST)
+	public ProblemDetails handleValidationException(MethodArgumentNotValidException methodArgumentNotValidException){ // Hangi hata olursa handle edeyim?
+		ValidationProblemDetails validationProblemDetails = new ValidationProblemDetails();
+		validationProblemDetails.setMessage("VALIDATION.EXCEPTION");
+		validationProblemDetails.setValidationErrors(new HashMap<String, String>());
+
+		for(FieldError fieldError : methodArgumentNotValidException.getBindingResult().getFieldErrors()){
+			validationProblemDetails.getValidationErrors().put(fieldError.getField(), fieldError.getDefaultMessage());
+		}
+
+		return validationProblemDetails;
 	}
 
 	@Bean
